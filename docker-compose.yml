@@ -1,0 +1,14 @@
+services:
+  app:
+    build: ./backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - sqlite_data:/data
+    environment:
+      DATA_DIR: /data
+      # BASE_PATH: /oratorijapp  # odkomentiraj če app ni na root domeni
+
+volumes:
+  sqlite_data:

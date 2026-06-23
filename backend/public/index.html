@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vpis v delavnice — Oratorij</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',system-ui,sans-serif;background:#f0f2f8;color:#1e293b;min-height:100vh}
+select,button,textarea,input{font-family:inherit}
+select{-webkit-appearance:none;appearance:none}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#c1c8d4;border-radius:2px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.15s ease}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+// ── JSON parser ───────────────────────────────────────────────────────────
+function parseMainJSON(text) {
+  const d = JSON.parse(text);
+  const workshops = (d.delavnice || []).map(w => ({
+    id: w.id,
+    name: w.name,
+    capacity: w.capacity,
+    duration: w.duration || 1,
+    tag: !w.tag ? '/' : w.tag === 'mlajši' ? 'm' : w.tag === 'starejši' ? 's' : '/',
+  }));
+  const kateheze = (d.kateheze || []).map(k => ({
+    id: k.id,
+    name: k.name,
+    size: k.size,
+    tag: !k.tag ? '/' : k.tag === 'mlajši' ? 'm' : k.tag === 'starejši' ? 's' : '/',
+  }));
+  const matrix = {};
+  for (const row of (d.mainMatrix || [])) {
+    matrix[row.katehezaId] = {};
+    for (const ws of (row.workshops || [])) {
+      matrix[row.katehezaId][ws.workshopId] = ws.slots || [];
+    }
+  }
+  return { workshops, kateheze, matrix, numDays: d.numDays || 4 };
+}
+
+// ── CSV parser: Ime,Priimek,Šifra,Kateheza ────────────────────────────────
+function parseCSV(text) {
+  return text.trim().split('\n').map(line => {
+    const p = line.split(',');
+    if (p.length < 4) return null;
+    const id = parseInt(p[2]?.trim());
+    if (!id || isNaN(id)) return null;
+    return { id, firstName: p[0]?.trim(), lastName: p[1]?.trim(), katehezaName: p[3]?.trim() };
+  }).filter(Boolean);
+}
+
+// ── Get schedule for kateheza on a day ───────────────────────────────────
+// Returns { krog1: [...], krog2: [...], twoH: [...] }
+// Each item: { ws, key }
+// Each slot: { day, hour, count } — count = children from this kateheza scheduled here
+function getSchedule(katId, day, matrix, wsMap) {
+  const kMap = matrix[katId] || {};
+  const krog1 = [], krog2 = [], twoH = [];
+  for (const [wsId, slots] of Object.entries(kMap)) {
+    const ws = wsMap[wsId];
+    if (!ws) continue;
+    const daySlots = slots.filter(s => s.day === day);
+    if (!daySlots.length) continue;
+    if (ws.duration === 2) {
+      const count = daySlots.reduce((s, x) => s + (x.count || 1), 0);
+      twoH.push({ ws, count, key: `${katId}|d${day}|${wsId}|2h` });
+    } else {
+      const s1 = daySlots.find(s => s.hour === 1);
+      const s2 = daySlots.find(s => s.hour === 2);
+      if (s1) krog1.push({ ws, count: s1.count || 1, key: `${katId}|d${day}|${wsId}|h1` });
+      if (s2) krog2.push({ ws, count: s2.count || 1, key: `${katId}|d${day}|${wsId}|h2` });
+    }
+  }
+  krog1.sort((a,b) => a.ws.name.localeCompare(b.ws.name));
+  krog2.sort((a,b) => a.ws.name.localeCompare(b.ws.name));
+  twoH.sort((a,b) => a.ws.name.localeCompare(b.ws.name));
+  return { krog1, krog2, twoH };
+}
+
+// ── ShifraInput ───────────────────────────────────────────────────────────
+function ShifraInput({ regKey, count, regs, childMap, katehezaName, onAdd, onRemove }) {
+  const [val, setVal] = useState('');
+  const inputRef = useRef();
+  const registered = regs[regKey] || [];
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, []);
+
+  const childId = val ? parseInt(val) : null;
+  const preview = childId ? childMap[childId] : null;
+  const alreadyHere = preview && registered.includes(preview.id);
+  const wrongKat = preview && preview.katehezaName !== katehezaName;
+
+  const handleAdd = () => {
+    if (!preview || alreadyHere) return;
+    onAdd(regKey, preview.id);
+    setVal('');
+    inputRef.current?.focus();
+  };
+
+  return (
+    <div style={{ paddingTop: 10 }}>
+      {/* Registered list */}
+      {registered.map(id => {
+        const c = childMap[id];
+        return (
+          <div key={id} className="fade-in" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #f1f5f9' }}>
+            <div>
+              <span style={{ fontWeight:800, color:'#6366f1', fontSize:13, marginRight:6 }}>#{id}</span>
+              <span style={{ fontSize:14, fontWeight:600 }}>{c ? `${c.firstName} ${c.lastName}` : `Otrok ${id}`}</span>
+            </div>
+            <button onClick={() => onRemove(regKey, id)} style={{ background:'#fee2e2', color:'#ef4444', border:'none', borderRadius:8, width:34, height:34, fontSize:17, cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+          </div>
+        );
+      })}
+
+      {registered.length > 0 && (
+        <div style={{ fontSize:12, fontWeight:700, color: registered.length >= count ? '#16a34a' : '#94a3b8', marginTop:8, marginBottom:8 }}>
+          {registered.length >= count ? '✅ Vsi vpisani' : `${registered.length} / ${count} vpisanih`}
+        </div>
+      )}
+
+      {/* Input row */}
+      <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+        <div style={{ flex:1 }}>
+          <input
+            ref={inputRef}
+            type="tel"
+            value={val}
+            onChange={e => setVal(e.target.value.replace(/\D/g, ''))}
+            onKeyDown={e => { if (e.key === 'Enter') handleAdd(); }}
+            placeholder="Šifra..."
+            style={{
+              width:'100%', padding:'11px 14px', borderRadius:10, fontSize:20, fontWeight:800,
+              border:`2px solid ${preview && !alreadyHere && !wrongKat ? '#22c55e' : preview && (alreadyHere || wrongKat) ? '#f59e0b' : '#e2e8f0'}`,
+              background:'#fff', letterSpacing:1, transition:'border-color 0.15s'
+            }}
+          />
+          {/* Preview below input */}
+          {preview ? (
+            <div className="fade-in" style={{ marginTop:5, fontSize:13, fontWeight:700, color: alreadyHere ? '#f59e0b' : wrongKat ? '#ef4444' : '#16a34a' }}>
+              {alreadyHere
+                ? `⚠ ${preview.firstName} ${preview.lastName} — že vpisan`
+                : wrongKat
+                  ? `⚠ ${preview.firstName} ${preview.lastName} — ${preview.katehezaName} (napačna!)`
+                  : `✓ ${preview.firstName} ${preview.lastName}`
+              }
+            </div>
+          ) : val ? (
+            <div className="fade-in" style={{ marginTop:5, fontSize:13, fontWeight:700, color:'#ef4444' }}>Šifra #{val} ne obstaja</div>
+          ) : null}
+        </div>
+        <button
+          onClick={handleAdd}
+          disabled={!preview || alreadyHere || wrongKat}
+          style={{
+            padding:'11px 20px', borderRadius:10, fontSize:18, fontWeight:800,
+            background: (!preview || alreadyHere || wrongKat) ? '#f1f5f9' : '#22c55e',
+            color: (!preview || alreadyHere || wrongKat) ? '#94a3b8' : '#fff',
+            border:'none', cursor: (!preview || alreadyHere || wrongKat) ? 'default' : 'pointer',
+            transition:'background 0.15s', flexShrink:0
+          }}
+        >✓</button>
+      </div>
+    </div>
+  );
+}
+
+// ── WorkshopCard ──────────────────────────────────────────────────────────
+function WorkshopCard({ ws, count, regKey, regs, childMap, katehezaName, onAdd, onRemove }) {
+  const [open, setOpen] = useState(false);
+  const registered = regs[regKey] || [];
+  const done = registered.length >= count;
+  const partial = !done && registered.length > 0;
+
+  const borderColor = done ? '#bbf7d0' : partial ? '#fde68a' : '#f1f5f9';
+  const bgColor     = done ? '#f0fdf4' : partial ? '#fffbeb' : '#fff';
+  const countColor  = done ? '#16a34a' : partial ? '#ca8a04' : '#64748b';
+
+  return (
+    <div style={{ background: bgColor, borderRadius:13, marginBottom:8, border:`2px solid ${borderColor}`, overflow:'hidden', transition:'border-color 0.2s, background 0.2s' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ padding:'13px 16px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none' }}
+      >
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontWeight:700, fontSize:15, marginBottom:2 }}>{ws.name}</div>
+          <div style={{ fontSize:12, color:'#94a3b8', display:'flex', gap:10, alignItems:'center' }}>
+            <span style={{ fontWeight:800, color: countColor, fontSize:13 }}>
+              {registered.length}/{count}
+            </span>
+            <span>kapaciteta {ws.capacity}</span>
+            {ws.duration === 2 && <span style={{ background:'#e0e7ff', color:'#4338ca', padding:'1px 6px', borderRadius:4, fontWeight:700 }}>2h</span>}
+          </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          {done  && <span style={{ fontSize:16 }}>✅</span>}
+          {partial && <span style={{ fontSize:14 }}>✏️</span>}
+          <span style={{ color:'#94a3b8', fontSize:18, display:'inline-block', transform: open ? 'rotate(180deg)' : 'none', transition:'transform 0.15s' }}>▾</span>
+        </div>
+      </div>
+
+      {open && (
+        <div className="fade-in" style={{ padding:'0 16px 14px', borderTop:'1px solid #f1f5f9' }}>
+          <ShifraInput
+            regKey={regKey}
+            count={count}
+            regs={regs}
+            childMap={childMap}
+            katehezaName={katehezaName}
+            onAdd={onAdd}
+            onRemove={onRemove}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Helper: parse registration key ───────────────────────────────────────
+function parseRegKey(key) {
+  const [katId, dayPart, wsId, hourPart] = key.split('|');
+  return {
+    katId,
+    day:  parseInt(dayPart?.slice(1)),
+    wsId,
+    is2h: hourPart === '2h',
+    hour: hourPart === '2h' ? null : parseInt(hourPart?.slice(1)),
+  };
+}
+
+// ── IskanjePrikaz ─────────────────────────────────────────────────────────
+function IskanjePrikaz({ childMap, kateheze, matrix, wsMap, numDays, regs }) {
+  const [val, setVal] = useState('');
+  const childId = val ? parseInt(val) : null;
+  const child = childId ? childMap[childId] : null;
+  const kat = child ? kateheze.find(k => k.name === child.katehezaName) : null;
+
+  const fullSchedule = useMemo(() => {
+    if (!kat) return [];
+    return Array.from({length: numDays}, (_, i) => {
+      const day = i + 1;
+      const { krog1, krog2, twoH } = getSchedule(kat.id, day, matrix, wsMap);
+      return { day, krog1, krog2, twoH };
+    });
+  }, [kat, numDays, matrix, wsMap]);
+
+  const myRegs = useMemo(() => {
+    if (!child) return [];
+    const results = [];
+    for (const [key, ids] of Object.entries(regs)) {
+      if (!ids.includes(child.id)) continue;
+      const { day, wsId, hour, is2h } = parseRegKey(key);
+      const ws = wsMap[wsId];
+      if (ws) results.push({ day, hour, is2h, ws });
+    }
+    return results.sort((a, b) => a.day - b.day || (a.hour||0) - (b.hour||0));
+  }, [child, regs, wsMap]);
+
+  const Chip = ({ label, accent, count }) => (
+    <span style={{ display:'inline-block', margin:'2px 4px 2px 0', padding:'4px 10px', background: accent ? '#e0e7ff' : '#fff', border:`1.5px solid ${accent ? '#c7d2fe' : '#e2e8f0'}`, borderRadius:8, fontSize:13, fontWeight:600, color: accent ? '#4338ca' : '#1e293b' }}>
+      {label}{count !== undefined && <span style={{ fontWeight:800, color:'#6366f1', marginLeft:4 }}>{count}</span>}
+    </span>
+  );
+
+  return (
+    <div style={{ padding:'14px' }}>
+      {/* Šifra input */}
+      <input
+        type="tel"
+        value={val}
+        onChange={e => setVal(e.target.value.replace(/\D/g,''))}
+        placeholder="Vpiši šifro otroka..."
+        autoFocus
+        style={{ width:'100%', padding:'13px 16px', borderRadius:12, fontSize:22, fontWeight:800,
+          border:`2px solid ${child ? '#22c55e' : val ? '#f87171' : '#e2e8f0'}`, background:'#fff', letterSpacing:1, marginBottom:10 }}
+      />
+
+      {val && !child && <div style={{ color:'#ef4444', fontWeight:700, fontSize:13, marginBottom:10 }}>Šifra #{val} ne obstaja</div>}
+
+      {child && (
+        <div style={{ padding:'12px 16px', background:'#f0fdf4', borderRadius:12, border:'1.5px solid #bbf7d0', marginBottom:18 }}>
+          <div style={{ fontSize:18, fontWeight:800 }}>{child.firstName} {child.lastName}</div>
+          <div style={{ fontSize:13, color:'#64748b', marginTop:2 }}>
+            Šifra #{child.id} · {child.katehezaName}
+            {kat && kat.tag !== '/' && <span style={{ marginLeft:6, padding:'1px 7px', borderRadius:4, fontSize:11, fontWeight:700, background: kat.tag==='m'?'#dbeafe':'#fde68a', color: kat.tag==='m'?'#1d4ed8':'#92400e' }}>{kat.tag==='m'?'mlajši':'starejši'}</span>}
+          </div>
+        </div>
+      )}
+
+      {child && kat && (
+        <>
+          {/* ── Razpored kateheze ── */}
+          <div style={{ fontSize:11, fontWeight:800, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:10 }}>
+            Razpored kateheze
+          </div>
+          {fullSchedule.map(({ day, krog1, krog2, twoH }) => {
+            if (!krog1.length && !krog2.length && !twoH.length) return null;
+            return (
+              <div key={day} style={{ marginBottom:14, background:'#fff', borderRadius:12, padding:'12px 14px', border:'1.5px solid #f1f5f9' }}>
+                <div style={{ fontSize:12, fontWeight:800, color:'#6366f1', marginBottom:8 }}>DAN {day}</div>
+                {krog1.length > 0 && (
+                  <div style={{ marginBottom:6 }}>
+                    <span style={{ fontSize:10, fontWeight:800, color:'#94a3b8', marginRight:8, textTransform:'uppercase' }}>Krog 1</span>
+                    {krog1.map(item => <Chip key={item.key} label={item.ws.name} count={item.count} />)}
+                  </div>
+                )}
+                {krog2.length > 0 && (
+                  <div style={{ marginBottom:6 }}>
+                    <span style={{ fontSize:10, fontWeight:800, color:'#94a3b8', marginRight:8, textTransform:'uppercase' }}>Krog 2</span>
+                    {krog2.map(item => <Chip key={item.key} label={item.ws.name} count={item.count} />)}
+                  </div>
+                )}
+                {twoH.length > 0 && (
+                  <div>
+                    <span style={{ fontSize:10, fontWeight:800, color:'#94a3b8', marginRight:8, textTransform:'uppercase' }}>2h</span>
+                    {twoH.map(item => <Chip key={item.key} label={item.ws.name} count={item.count} accent />)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* ── Individualni vpisi ── */}
+          <div style={{ fontSize:11, fontWeight:800, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginTop:20, marginBottom:10 }}>
+            Vpisan v delavnice ({myRegs.length})
+          </div>
+          {myRegs.length === 0 ? (
+            <div style={{ color:'#94a3b8', fontSize:14 }}>Otrok še ni bil vpisan v nobeno delavnico.</div>
+          ) : myRegs.map((r, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', padding:'10px 14px', background:'#fff', borderRadius:10, marginBottom:6, border:'1.5px solid #f1f5f9' }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:700, fontSize:14 }}>{r.ws.name}</div>
+                <div style={{ fontSize:12, color:'#94a3b8' }}>Dan {r.day} · {r.is2h ? 'oba kroga (2h)' : `Krog ${r.hour}`}</div>
+              </div>
+              <div style={{ fontSize:11, padding:'3px 9px', background:'#e0e7ff', color:'#4338ca', borderRadius:6, fontWeight:800 }}>
+                D{r.day}{r.is2h ? ' 2h' : ` K${r.hour}`}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {!val && (
+        <div style={{ textAlign:'center', color:'#94a3b8', padding:'50px 0', fontSize:15 }}>
+          Vpiši šifro za prikaz razporeda in vpisov
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Evidenca ──────────────────────────────────────────────────────────────
+function Evidenca({ regs, childMap, wsMap }) {
+  const rows = useMemo(() => {
+    const result = [];
+    for (const [key, ids] of Object.entries(regs)) {
+      const { day, wsId, hour, is2h } = parseRegKey(key);
+      const ws = wsMap[wsId];
+      if (!ws) continue;
+      for (const childId of ids) {
+        const child = childMap[childId];
+        result.push({
+          childId,
+          name: child ? `${child.firstName} ${child.lastName}` : `#${childId}`,
+          kat:  child?.katehezaName || '?',
+          ws:   ws.name,
+          day, hour, is2h
+        });
+      }
+    }
+    return result.sort((a,b) => a.day-b.day || (a.hour||0)-(b.hour||0) || a.ws.localeCompare(b.ws));
+  }, [regs, childMap, wsMap]);
+
+  if (!rows.length) {
+    return <div style={{ padding:30, textAlign:'center', color:'#94a3b8', fontSize:15 }}>Še ni vpisanih otrok.</div>;
+  }
+
+  const TH = ({ children }) => (
+    <th style={{ padding:'9px 10px', textAlign:'left', fontWeight:700, color:'#64748b', borderBottom:'2px solid #e2e8f0', whiteSpace:'nowrap', fontSize:12 }}>{children}</th>
+  );
+  const TD = ({ children, bold, accent }) => (
+    <td style={{ padding:'8px 10px', fontWeight: bold?700:400, color: accent?'#6366f1':'#1e293b', fontSize:13, borderBottom:'1px solid #f1f5f9' }}>{children}</td>
+  );
+
+  return (
+    <div style={{ padding:'14px' }}>
+      <div style={{ fontSize:13, color:'#64748b', fontWeight:600, marginBottom:12 }}>{rows.length} vpisov skupaj</div>
+      <div style={{ overflowX:'auto', borderRadius:12, border:'1.5px solid #e2e8f0', background:'#fff' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead><tr style={{ background:'#f8fafc' }}>
+            <TH>#</TH><TH>Ime</TH><TH>Kateheza</TH><TH>Delavnica</TH><TH>Dan</TH><TH>Krog</TH>
+          </tr></thead>
+          <tbody>
+            {rows.map((r,i) => (
+              <tr key={i} style={{ background: i%2===0?'#fff':'#fafbff' }}>
+                <TD accent bold>{r.childId}</TD>
+                <TD bold>{r.name}</TD>
+                <TD>{r.kat}</TD>
+                <TD bold>{r.ws}</TD>
+                <TD>{r.day}</TD>
+                <TD>{r.is2h ? '1+2' : r.hour}</TD>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── SetupTab ──────────────────────────────────────────────────────────────
+function SetupTab({ onLoad, API, workshops, kateheze, childMap }) {
+  const jsonRef = useRef();
+  const csvRef  = useRef();
+  const [jsonStatus, setJsonStatus] = useState('');
+  const [csvStatus,  setCsvStatus]  = useState('');
+  const [jsonText, setJsonText] = useState('');
+  const [csvText,  setCsvText]  = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const isLoaded = workshops.length > 0;
+  const childCount = Object.keys(childMap).length;
+
+  const loadFile = (setter, setStatus) => (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      setter(ev.target.result);
+      setStatus(`✓ ${f.name} naložen`);
+    };
+    reader.readAsText(f, 'UTF-8');
+    e.target.value = '';
+  };
+
+  const handleGo = async () => {
+    if (!jsonText || !csvText) { alert('Naloži obe datoteki.'); return; }
+    try {
+      const parsed = parseMainJSON(jsonText);
+      const children = parseCSV(csvText);
+      // Save to backend so next reload auto-loads them
+      setSaving(true);
+      try {
+        await fetch(`${API || ''}/api/config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonData: jsonText, csvData: csvText }),
+        });
+      } catch(e) { console.warn('Config save failed:', e); }
+      setSaving(false);
+      onLoad(parsed, children);
+    } catch(e) {
+      alert('Napaka: ' + e.message);
+    }
+  };
+
+  return (
+    <div style={{ padding:'20px 16px 40px' }}>
+
+      {/* Status — kaj je v bazi */}
+      {isLoaded ? (
+        <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:12, padding:'14px 16px', marginBottom:24 }}>
+          <div style={{ fontWeight:800, fontSize:14, color:'#15803d', marginBottom:6 }}>✓ Podatki shranjeni v bazi</div>
+          <div style={{ fontSize:13, color:'#166534', lineHeight:1.8 }}>
+            <span style={{ marginRight:16 }}>📋 {kateheze.length} kateheze</span>
+            <span style={{ marginRight:16 }}>🎨 {workshops.length} delavnic</span>
+            <span>👤 {childCount} otrok</span>
+          </div>
+          <div style={{ marginTop:10, fontSize:12, color:'#4ade80' }}>
+            Ob naslednjem zagonu se naložijo samodejno. Spodaj lahko naložiš nove datoteke, če želiš zamenjati.
+          </div>
+        </div>
+      ) : (
+        <div style={{ background:'#eff6ff', border:'1.5px solid #bfdbfe', borderRadius:12, padding:'12px 16px', marginBottom:24, fontSize:13, color:'#1d4ed8', lineHeight:1.6 }}>
+          Naloži razpored (JSON) in seznam otrok (CSV), nato začni z vpisom.<br/>
+          <span style={{ color:'#64748b' }}>Ko enkrat naložiš, se shranijo — naslednjič se naložijo samodejno.</span>
+        </div>
+      )}
+
+      {/* JSON */}
+      <div style={{ marginBottom:20 }}>
+        <div style={{ fontWeight:700, fontSize:14, color:'#475569', marginBottom:8 }}>1. Razpored delavnic <span style={{ fontWeight:400, color:'#94a3b8' }}>(JSON)</span></div>
+        <input ref={jsonRef} type="file" accept=".json" style={{display:'none'}} onChange={loadFile(setJsonText, setJsonStatus, 'JSON')} />
+        <button onClick={() => jsonRef.current.click()} style={{
+          width:'100%', padding:'13px', background: jsonText ? '#f0fdf4' : '#6366f1',
+          color: jsonText ? '#16a34a' : '#fff', border: jsonText ? '2px solid #bbf7d0' : 'none',
+          borderRadius:12, fontSize:15, fontWeight:700, cursor:'pointer'
+        }}>
+          {jsonText ? jsonStatus : '📂 Naloži JSON'}
+        </button>
+      </div>
+
+      {/* CSV */}
+      <div style={{ marginBottom:32 }}>
+        <div style={{ fontWeight:700, fontSize:14, color:'#475569', marginBottom:8 }}>2. Seznam otrok <span style={{ fontWeight:400, color:'#94a3b8' }}>(CSV: Ime,Priimek,Šifra,Kateheza)</span></div>
+        <input ref={csvRef} type="file" accept=".csv,.txt" style={{display:'none'}} onChange={loadFile(setCsvText, setCsvStatus, 'CSV')} />
+        <button onClick={() => csvRef.current.click()} style={{
+          width:'100%', padding:'13px', background: csvText ? '#f0fdf4' : '#6366f1',
+          color: csvText ? '#16a34a' : '#fff', border: csvText ? '2px solid #bbf7d0' : 'none',
+          borderRadius:12, fontSize:15, fontWeight:700, cursor:'pointer'
+        }}>
+          {csvText ? csvStatus : '📂 Naloži CSV'}
+        </button>
+      </div>
+
+      <button onClick={handleGo} disabled={!jsonText || !csvText || saving} style={{
+        width:'100%', padding:'16px',
+        background: (!jsonText || !csvText) ? '#f1f5f9' : '#22c55e',
+        color: (!jsonText || !csvText) ? '#94a3b8' : '#fff',
+        border:'none', borderRadius:14, fontSize:18, fontWeight:800,
+        cursor: (!jsonText || !csvText) ? 'default' : 'pointer'
+      }}>
+        {saving ? 'Shranjujem...' : 'Začni z vpisom →'}
+      </button>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────────
+function App() {
+  const [tab, setTab] = useState('setup');
+
+  // Loaded data
+  const [workshops, setWorkshops] = useState([]);
+  const [kateheze,  setKateheze]  = useState([]);
+  const [matrix,    setMatrix]    = useState({});
+  const [numDays,   setNumDays]   = useState(4);
+  const [childMap,  setChildMap]  = useState({});  // id → child
+
+  // UI state
+  const [selDay,   setSelDay]   = useState(1);
+  const [selKatId, setSelKatId] = useState('');
+
+  // Registrations: { key → [childId, ...] }
+  const [regs, setRegs] = useState({});
+  const [apiOk, setApiOk] = useState(null); // null=checking, true=ok, false=offline
+
+  // API base — auto-detected from current URL so sub-path hosting works
+  // e.g. page at /oratorijapp/ → API calls go to /oratorijapp/api/...
+  const API = window.ORATORIJ_API || window.location.pathname.replace(/\/[^/]*$/, '');
+
+  // Load regs + saved config from backend on startup
+  useEffect(() => {
+    fetch(`${API}/api/regs`)
+      .then(r => r.json())
+      .then(data => { setRegs(data); setApiOk(true); })
+      .catch(() => {
+        setApiOk(false);
+        try { const s = localStorage.getItem('oratorij_regs'); if (s) setRegs(JSON.parse(s)); } catch {}
+      });
+
+    // Auto-load saved JSON + CSV from backend
+    fetch(`${API}/api/config`)
+      .then(r => r.json())
+      .then(cfg => {
+        if (cfg.jsonData && cfg.csvData) {
+          try {
+            const parsed = parseMainJSON(cfg.jsonData);
+            const children = parseCSV(cfg.csvData);
+            const cm = {};
+            children.forEach(c => { cm[c.id] = c; });
+            setWorkshops(parsed.workshops);
+            setKateheze(parsed.kateheze);
+            setMatrix(parsed.matrix);
+            setNumDays(parsed.numDays);
+            setChildMap(cm);
+            setSelKatId(parsed.kateheze[0]?.id || '');
+            setTab('vpis');
+          } catch(e) { console.warn('Auto-load failed:', e); }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Mirror to localStorage as offline fallback
+  useEffect(() => {
+    if (apiOk === false) {
+      try { localStorage.setItem('oratorij_regs', JSON.stringify(regs)); } catch {}
+    }
+  }, [regs, apiOk]);
+
+  const wsMap = useMemo(() => Object.fromEntries(workshops.map(w => [w.id, w])), [workshops]);
+
+  const handleLoad = useCallback((parsed, children) => {
+    setWorkshops(parsed.workshops);
+    setKateheze(parsed.kateheze);
+    setMatrix(parsed.matrix);
+    setNumDays(parsed.numDays);
+    const cm = {};
+    children.forEach(c => { cm[c.id] = c; });
+    setChildMap(cm);
+    setSelKatId(parsed.kateheze[0]?.id || '');
+    setSelDay(1);
+    setTab('vpis');
+  }, []);
+
+  const addReg = useCallback((key, childId) => {
+    setRegs(prev => ({ ...prev, [key]: [...new Set([...(prev[key]||[]), childId])] }));
+    if (apiOk) {
+      fetch(`${API}/api/regs/${encodeURIComponent(key)}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ child: childId })
+      }).catch(() => {});
+    }
+  }, [apiOk, API]);
+
+  const removeReg = useCallback((key, childId) => {
+    setRegs(prev => ({ ...prev, [key]: (prev[key]||[]).filter(id => id !== childId) }));
+    if (apiOk) {
+      fetch(`${API}/api/regs/${encodeURIComponent(key)}/${childId}`, { method: 'DELETE' })
+        .catch(() => {});
+    }
+  }, [apiOk, API]);
+
+  const selKat = kateheze.find(k => k.id === selKatId);
+  const schedule = useMemo(() => {
+    if (!selKatId || !Object.keys(wsMap).length) return { krog1:[], krog2:[], twoH:[] };
+    return getSchedule(selKatId, selDay, matrix, wsMap);
+  }, [selKatId, selDay, matrix, wsMap]);
+
+  // Badge: total registered today across all kateheze
+  const totalToday = useMemo(() => {
+    const tag = `|d${selDay}|`;
+    return Object.entries(regs).filter(([k]) => k.includes(tag)).reduce((s,[,v]) => s+v.length, 0);
+  }, [regs, selDay]);
+
+  const Section = ({ title, items }) => {
+    if (!items.length) return null;
+    return (
+      <div style={{ marginBottom:18 }}>
+        <div style={{ fontSize:11, fontWeight:800, color:'#94a3b8', textTransform:'uppercase', letterSpacing:1.2, marginBottom:8, paddingLeft:2 }}>
+          {title}
+        </div>
+        {items.map(item => (
+          <WorkshopCard
+            key={item.key}
+            ws={item.ws}
+            count={item.count}
+            regKey={item.key}
+            regs={regs}
+            childMap={childMap}
+            katehezaName={selKat?.name || ''}
+            onAdd={addReg}
+            onRemove={removeReg}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ maxWidth:560, margin:'0 auto', minHeight:'100vh', background:'#f0f2f8', paddingBottom:60 }}>
+
+      {/* ── Header ── */}
+      <div style={{ background:'#fff', boxShadow:'0 1px 6px rgba(0,0,0,0.08)', position:'sticky', top:0, zIndex:20 }}>
+        <div style={{ padding:'14px 18px 0' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div>
+              <div style={{ fontSize:18, fontWeight:800 }}>Vpis v delavnice</div>
+              <div style={{ fontSize:11, color:'#94a3b8' }}>Oratorij Grosuplje</div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              {apiOk !== null && (
+                <div style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:99,
+                  background: apiOk ? '#dcfce7' : '#fef9c3',
+                  color: apiOk ? '#15803d' : '#854d0e' }}>
+                  {apiOk ? '● online' : '● offline'}
+                </div>
+              )}
+              {tab === 'vpis' && totalToday > 0 && (
+                <div style={{ background:'#6366f1', color:'#fff', borderRadius:99, padding:'4px 13px', fontSize:13, fontWeight:700 }}>
+                  {totalToday} danes
+                </div>
+              )}
+            </div>
+          </div>
+          <div style={{ display:'flex', marginTop:12 }}>
+            {[['vpis','✏️ Vpis'],['iskanje','🔍 Iskanje'],['evidenca','📋 Evidenca'],['setup','⚙️ Podatki']].map(([t,l]) => (
+              <button key={t} onClick={() => setTab(t)} style={{
+                flex:1, padding:'10px 0', background:'none', border:'none',
+                borderBottom: tab===t ? '3px solid #6366f1' : '3px solid transparent',
+                color: tab===t ? '#6366f1' : '#64748b',
+                fontSize:12, fontWeight:700, cursor:'pointer', transition:'color 0.15s'
+              }}>{l}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Setup tab ── */}
+      {tab === 'setup' && <SetupTab onLoad={handleLoad} API={API} workshops={workshops} kateheze={kateheze} childMap={childMap} />}
+
+      {/* ── Iskanje tab ── */}
+      {tab === 'iskanje' && (
+        <IskanjePrikaz
+          childMap={childMap}
+          kateheze={kateheze}
+          matrix={matrix}
+          wsMap={wsMap}
+          numDays={numDays}
+          regs={regs}
+        />
+      )}
+
+      {/* ── Evidenca tab ── */}
+      {tab === 'evidenca' && (
+        <Evidenca regs={regs} childMap={childMap} wsMap={wsMap} />
+      )}
+
+      {/* ── Vpis tab ── */}
+      {tab === 'vpis' && (
+        <div style={{ padding:'14px 14px' }}>
+
+          {workshops.length === 0 ? (
+            <div style={{ background:'#fffbeb', border:'1.5px solid #fde68a', borderRadius:12, padding:'16px', textAlign:'center', color:'#92400e', fontSize:14 }}>
+              ⚠ Najprej naloži podatke pod <strong>⚙️ Podatki</strong>
+            </div>
+          ) : (
+            <>
+              {/* Day selector */}
+              <div style={{ display:'flex', gap:6, marginBottom:12 }}>
+                {Array.from({length:numDays},(_,i)=>i+1).map(d => (
+                  <button key={d} onClick={() => setSelDay(d)} style={{
+                    flex:1, padding:'11px 0', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer',
+                    background: selDay===d ? '#6366f1' : '#fff',
+                    color: selDay===d ? '#fff' : '#64748b',
+                    border:`2px solid ${selDay===d ? '#6366f1' : '#e2e8f0'}`,
+                    transition:'all 0.15s'
+                  }}>Dan {d}</button>
+                ))}
+              </div>
+
+              {/* Kateheza selector */}
+              <div style={{ position:'relative', marginBottom:16 }}>
+                <select
+                  value={selKatId}
+                  onChange={e => setSelKatId(e.target.value)}
+                  style={{
+                    width:'100%', padding:'13px 44px 13px 16px', borderRadius:12, fontSize:16,
+                    fontWeight:700, border:'2px solid #e2e8f0', background:'#fff',
+                    color: selKatId ? '#1e293b' : '#94a3b8'
+                  }}
+                >
+                  <option value="">Izberi katehezo...</option>
+                  {kateheze.map(k => {
+                    const ageTxt = k.tag==='m' ? ' · mlajši' : k.tag==='s' ? ' · starejši' : '';
+                    return <option key={k.id} value={k.id}>{k.name} ({k.size}{ageTxt})</option>;
+                  })}
+                </select>
+                <span style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none', color:'#94a3b8', fontSize:20 }}>▾</span>
+              </div>
+
+              {/* Schedule */}
+              {selKatId && (() => {
+                const { krog1, krog2, twoH } = schedule;
+                if (!krog1.length && !krog2.length && !twoH.length) {
+                  return (
+                    <div style={{ textAlign:'center', color:'#94a3b8', padding:'40px 0', fontSize:15 }}>
+                      Ni razporeda za {selKat?.name} — Dan {selDay}
+                    </div>
+                  );
+                }
+                return (
+                  <>
+                    <Section title="Krog 1" items={krog1} />
+                    <Section title="Krog 2" items={krog2} />
+                    <Section title="2-urne delavnice (oba kroga)" items={twoH} />
+                  </>
+                );
+              })()}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
