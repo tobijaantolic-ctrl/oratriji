@@ -21,6 +21,13 @@ APP_PASSWORD=izberi-mocno-skupno-geslo
 
 Render app nato dobi javen HTTPS URL. Podatki se shranjujejo v Supabase Postgres bazo, ne v lokalni disk Renderja. `APP_PASSWORD` je skupno geslo, ki ga vnesejo naprave ob prvem obisku.
 
+Po deployu lahko preveris delovanje:
+
+```bash
+cd backend
+APP_URL="https://YOUR-RENDER-URL" APP_PASSWORD="geslo" npm run smoke
+```
+
 ## Prenos lokalne SQLite baze v Supabase/Postgres
 
 Ko imas `DATABASE_URL`, lahko enkrat preneses trenutne lokalne podatke:

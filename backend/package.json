@@ -7,6 +7,7 @@
   },
   "scripts": {
     "migrate:postgres": "node scripts/migrate-sqlite-to-postgres.js",
+    "smoke": "node scripts/smoke-test.js",
     "start": "node server.js"
   },
   "dependencies": {

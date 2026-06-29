@@ -34,9 +34,11 @@ SQLITE_PATH="../data/regs.db" DATABASE_URL="postgresql://..." npm run migrate:po
 
 ## 4. Smoke test
 
-After deploy, these should work:
+After deploy, run this from the repository:
 
 ```bash
-curl https://YOUR-RENDER-URL/healthz
-curl -H "X-App-Password: YOUR_PASSWORD" https://YOUR-RENDER-URL/api/regs
+cd backend
+APP_URL="https://YOUR-RENDER-URL" APP_PASSWORD="YOUR_PASSWORD" npm run smoke
 ```
+
+This checks `/healthz`, password protection, saving a test registration, and deleting it again.
