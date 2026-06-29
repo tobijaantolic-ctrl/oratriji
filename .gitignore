@@ -1,4 +1,7 @@
 backend/node_modules/
+.env
+.env.*
+!.env.example
 *.tar.gz
 data/
 .DS_Store
