@@ -6,7 +6,6 @@ const path = require('path');
 const fs = require('fs');
 
 const DATA_DIR = process.env.DATA_DIR || '/data';
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const PORT     = process.env.PORT || 3000;
 const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/+$/, ''); // e.g. '/hello-app'
@@ -18,6 +17,7 @@ function createStore() {
 }
 
 function createSqliteStore() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   const db = new Database(path.join(DATA_DIR, 'regs.db'));
   db.pragma('journal_mode = WAL');
 
