@@ -35,6 +35,9 @@ function createSqliteStore() {
 
   return {
     name: 'sqlite',
+    async ping() {
+      db.prepare('SELECT 1').get();
+    },
     async getConfig() {
       return db.prepare('SELECT k, v FROM config').all();
     },
@@ -85,6 +88,9 @@ function createPostgresStore(connectionString) {
           v TEXT NOT NULL
         );
       `);
+    },
+    async ping() {
+      await pool.query('SELECT 1');
     },
     async getConfig() {
       const result = await pool.query('SELECT k, v FROM config');
@@ -165,9 +171,10 @@ const store = createStore();
 
 const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-router.get('/healthz', (req, res) => {
+router.get('/healthz', asyncHandler(async (req, res) => {
+  await store.ping();
   res.json({ ok: true, db: store.name });
-});
+}));
 
 router.use('/api', (req, res, next) => {
   if (!APP_PASSWORD) return next();

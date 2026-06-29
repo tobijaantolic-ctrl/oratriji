@@ -2,6 +2,9 @@
   "name": "oratorij-backend",
   "version": "1.0.0",
   "main": "server.js",
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "migrate:postgres": "node scripts/migrate-sqlite-to-postgres.js",
     "start": "node server.js"

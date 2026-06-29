@@ -6,6 +6,8 @@ App lokalno uporablja SQLite. V produkciji uporabi Postgres/Supabase prek `DATAB
 
 ## Online deploy: Render + Supabase
 
+Kratek checklist je tudi v [DEPLOY.md](DEPLOY.md).
+
 1. V Supabase ustvari nov projekt.
 2. V Supabase odpri **Project Settings -> Database** in skopiraj Postgres connection string.
 3. Na Render ustvari nov **Blueprint** iz tega GitHub repozitorija.
