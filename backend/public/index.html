@@ -423,7 +423,7 @@ function Evidenca({ regs, childMap, wsMap }) {
 }
 
 // ── SetupTab ──────────────────────────────────────────────────────────────
-function SetupTab({ onLoad, API, workshops, kateheze, childMap }) {
+function SetupTab({ onLoad, API, apiFetch, workshops, kateheze, childMap }) {
   const jsonRef = useRef();
   const csvRef  = useRef();
   const [jsonStatus, setJsonStatus] = useState('');
@@ -455,7 +455,7 @@ function SetupTab({ onLoad, API, workshops, kateheze, childMap }) {
       // Save to backend so next reload auto-loads them
       setSaving(true);
       try {
-        await fetch(`${API || ''}/api/config`, {
+        await apiFetch(`${API || ''}/api/config`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jsonData: jsonText, csvData: csvText }),
@@ -548,14 +548,38 @@ function App() {
   // Registrations: { key → [childId, ...] }
   const [regs, setRegs] = useState({});
   const [apiOk, setApiOk] = useState(null); // null=checking, true=ok, false=offline
+  const authRequired = window.ORATORIJ_AUTH_REQUIRED === true;
+  const [authPassword, setAuthPassword] = useState(() => {
+    try { return localStorage.getItem('oratorij_password') || ''; } catch { return ''; }
+  });
+  const [authInput, setAuthInput] = useState('');
 
   // API base — auto-detected from current URL so sub-path hosting works
   // e.g. page at /oratorijapp/ → API calls go to /oratorijapp/api/...
   const API = window.ORATORIJ_API || window.location.pathname.replace(/\/[^/]*$/, '');
 
+  const apiFetch = useCallback((url, options = {}) => {
+    const headers = { ...(options.headers || {}) };
+    if (authRequired && authPassword) headers['X-App-Password'] = authPassword;
+    return fetch(url, { ...options, headers }).then(response => {
+      if (response.status === 401) {
+        setApiOk(false);
+        if (authRequired) {
+          try { localStorage.removeItem('oratorij_password'); } catch {}
+          setAuthPassword('');
+          setAuthInput('');
+        }
+        throw new Error('Napačno geslo');
+      }
+      return response;
+    });
+  }, [authRequired, authPassword]);
+
   // Load regs + saved config from backend on startup
   useEffect(() => {
-    fetch(`${API}/api/regs`)
+    if (authRequired && !authPassword) return;
+
+    apiFetch(`${API}/api/regs`)
       .then(r => r.json())
       .then(data => { setRegs(data); setApiOk(true); })
       .catch(() => {
@@ -564,7 +588,7 @@ function App() {
       });
 
     // Auto-load saved JSON + CSV from backend
-    fetch(`${API}/api/config`)
+    apiFetch(`${API}/api/config`)
       .then(r => r.json())
       .then(cfg => {
         if (cfg.jsonData && cfg.csvData) {
@@ -584,7 +608,7 @@ function App() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [API, apiFetch, authRequired, authPassword]);
 
   // Mirror to localStorage as offline fallback
   useEffect(() => {
@@ -611,20 +635,20 @@ function App() {
   const addReg = useCallback((key, childId) => {
     setRegs(prev => ({ ...prev, [key]: [...new Set([...(prev[key]||[]), childId])] }));
     if (apiOk) {
-      fetch(`${API}/api/regs/${encodeURIComponent(key)}`, {
+      apiFetch(`${API}/api/regs/${encodeURIComponent(key)}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ child: childId })
       }).catch(() => {});
     }
-  }, [apiOk, API]);
+  }, [apiOk, API, apiFetch]);
 
   const removeReg = useCallback((key, childId) => {
     setRegs(prev => ({ ...prev, [key]: (prev[key]||[]).filter(id => id !== childId) }));
     if (apiOk) {
-      fetch(`${API}/api/regs/${encodeURIComponent(key)}/${childId}`, { method: 'DELETE' })
+      apiFetch(`${API}/api/regs/${encodeURIComponent(key)}/${childId}`, { method: 'DELETE' })
         .catch(() => {});
     }
-  }, [apiOk, API]);
+  }, [apiOk, API, apiFetch]);
 
   const selKat = kateheze.find(k => k.id === selKatId);
   const schedule = useMemo(() => {
@@ -637,6 +661,37 @@ function App() {
     const tag = `|d${selDay}|`;
     return Object.entries(regs).filter(([k]) => k.includes(tag)).reduce((s,[,v]) => s+v.length, 0);
   }, [regs, selDay]);
+
+  if (authRequired && !authPassword) {
+    const submitPassword = (e) => {
+      e.preventDefault();
+      const value = authInput.trim();
+      if (!value) return;
+      try { localStorage.setItem('oratorij_password', value); } catch {}
+      setAuthPassword(value);
+      setApiOk(null);
+    };
+
+    return (
+      <div style={{ maxWidth:420, margin:'0 auto', minHeight:'100vh', background:'#f0f2f8', display:'flex', alignItems:'center', padding:'22px' }}>
+        <form onSubmit={submitPassword} style={{ width:'100%', background:'#fff', borderRadius:14, padding:'24px', boxShadow:'0 8px 30px rgba(15,23,42,0.12)' }}>
+          <div style={{ fontSize:22, fontWeight:800, marginBottom:6 }}>Vpis v delavnice</div>
+          <div style={{ fontSize:13, color:'#64748b', marginBottom:20 }}>Vnesi geslo za dostop.</div>
+          <input
+            type="password"
+            value={authInput}
+            onChange={e => setAuthInput(e.target.value)}
+            autoFocus
+            placeholder="Geslo"
+            style={{ width:'100%', padding:'13px 14px', borderRadius:10, border:'2px solid #e2e8f0', fontSize:16, fontWeight:700, marginBottom:12 }}
+          />
+          <button type="submit" style={{ width:'100%', padding:'14px', border:'none', borderRadius:12, background:'#6366f1', color:'#fff', fontSize:16, fontWeight:800, cursor:'pointer' }}>
+            Nadaljuj
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   const Section = ({ title, items }) => {
     if (!items.length) return null;
@@ -702,7 +757,7 @@ function App() {
       </div>
 
       {/* ── Setup tab ── */}
-      {tab === 'setup' && <SetupTab onLoad={handleLoad} API={API} workshops={workshops} kateheze={kateheze} childMap={childMap} />}
+      {tab === 'setup' && <SetupTab onLoad={handleLoad} API={API} apiFetch={apiFetch} workshops={workshops} kateheze={kateheze} childMap={childMap} />}
 
       {/* ── Iskanje tab ── */}
       {tab === 'iskanje' && (

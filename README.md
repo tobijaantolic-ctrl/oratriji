@@ -14,9 +14,10 @@ App lokalno uporablja SQLite. V produkciji uporabi Postgres/Supabase prek `DATAB
 
 ```text
 DATABASE_URL=postgresql://...
+APP_PASSWORD=izberi-mocno-skupno-geslo
 ```
 
-Render app nato dobi javen HTTPS URL. Podatki se shranjujejo v Supabase Postgres bazo, ne v lokalni disk Renderja.
+Render app nato dobi javen HTTPS URL. Podatki se shranjujejo v Supabase Postgres bazo, ne v lokalni disk Renderja. `APP_PASSWORD` je skupno geslo, ki ga vnesejo naprave ob prvem obisku.
 
 ## Prenos lokalne SQLite baze v Supabase/Postgres
 

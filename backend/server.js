@@ -10,6 +10,7 @@ if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
 const PORT     = process.env.PORT || 3000;
 const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/+$/, ''); // e.g. '/hello-app'
+const APP_PASSWORD = process.env.APP_PASSWORD || '';
 
 function createStore() {
   if (process.env.DATABASE_URL) return createPostgresStore(process.env.DATABASE_URL);
@@ -153,7 +154,7 @@ function getHtml() {
   // Inject BASE_PATH so the frontend knows where to call the API
   html = html.replace(
     '<head>',
-    `<head>\n<script>window.ORATORIJ_API='${BASE_PATH}';</script>`
+    `<head>\n<script>window.ORATORIJ_API='${BASE_PATH}';window.ORATORIJ_AUTH_REQUIRED=${APP_PASSWORD ? 'true' : 'false'};</script>`
   );
   return html;
 }
@@ -166,6 +167,12 @@ const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next
 
 router.get('/healthz', (req, res) => {
   res.json({ ok: true, db: store.name });
+});
+
+router.use('/api', (req, res, next) => {
+  if (!APP_PASSWORD) return next();
+  if (req.get('x-app-password') === APP_PASSWORD) return next();
+  return res.status(401).json({ error: 'unauthorized' });
 });
 
 // Config
@@ -213,7 +220,9 @@ router.put('/api/regs/:key', asyncHandler(async (req, res) => {
   res.json({ ok: true });
 }));
 
-// Static assets (js, css, etc.) — index.html served dynamically below
+router.get(['/', '/index.html'], (req, res) => res.type('html').send(getHtml()));
+
+// Static assets (js, css, etc.) — index.html served dynamically above
 router.use(express.static(path.join(__dirname, 'public')));
 
 // SPA fallback — always return index.html with injected BASE_PATH
