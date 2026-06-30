@@ -16,12 +16,11 @@
 
 ```text
 DATABASE_URL=postgresql://...
-APP_PASSWORD=your-shared-password
 ```
 
 5. Deploy the service.
 6. Open the public Render URL.
-7. Enter `APP_PASSWORD` in the app.
+7. The app opens without a password. To require one later, add `APP_PASSWORD`.
 
 ## 3. Optional SQLite migration
 
@@ -38,7 +37,7 @@ After deploy, run this from the repository:
 
 ```bash
 cd backend
-APP_URL="https://YOUR-RENDER-URL" APP_PASSWORD="YOUR_PASSWORD" npm run smoke
+APP_URL="https://YOUR-RENDER-URL" npm run smoke
 ```
 
-This checks `/healthz`, password protection, saving a test registration, and deleting it again.
+This checks `/healthz`, saving a test registration, and deleting it again.

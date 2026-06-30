@@ -16,16 +16,15 @@ Kratek checklist je tudi v [DEPLOY.md](DEPLOY.md).
 
 ```text
 DATABASE_URL=postgresql://...
-APP_PASSWORD=izberi-mocno-skupno-geslo
 ```
 
-Render app nato dobi javen HTTPS URL. Podatki se shranjujejo v Supabase Postgres bazo, ne v lokalni disk Renderja. `APP_PASSWORD` je skupno geslo, ki ga vnesejo naprave ob prvem obisku.
+Render app nato dobi javen HTTPS URL. Podatki se shranjujejo v Supabase Postgres bazo, ne v lokalni disk Renderja. Ce nastavis `APP_PASSWORD`, app zahteva skupno geslo; ce ga ne nastavis, je app odprt brez prijave.
 
 Po deployu lahko preveris delovanje:
 
 ```bash
 cd backend
-APP_URL="https://YOUR-RENDER-URL" APP_PASSWORD="geslo" npm run smoke
+APP_URL="https://YOUR-RENDER-URL" npm run smoke
 ```
 
 ## Prenos lokalne SQLite baze v Supabase/Postgres
