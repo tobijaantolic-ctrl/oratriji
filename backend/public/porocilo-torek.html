@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Torek, vodne igre - Oratorij Grosuplje</title>
+  <meta name="description" content="Poročilo drugega dne Oratorija Grosuplje 2026: delavnice, kosilo in vodne igre.">
+  <meta property="og:title" content="Torek, vodne igre">
+  <meta property="og:description" content="Drugi dan Oratorija Grosuplje 2026 so zaznamovale delavnice, skupna molitev, kosilo in vodne igre.">
+  <meta property="og:image" content="/assets/porocilo-torek/vodne-igre.jpg">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18212f;
+      --muted: #607084;
+      --paper: #fffaf1;
+      --panel: #ffffff;
+      --line: #e4dac8;
+      --accent: #b93d2f;
+      --accent-2: #246b69;
+      --gold: #d99b2b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #fff7e8 0%, #f8efe1 44%, #eef5f2 100%);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(100%, 1240px);
+      margin: 0 auto;
+      padding: 28px 20px 56px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .brand {
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+
+    .back {
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+      line-height: 1.2;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+      gap: 34px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .eyebrow {
+      color: var(--accent-2);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(46px, 8vw, 92px);
+      line-height: 0.95;
+      letter-spacing: 0;
+      color: #151b25;
+    }
+
+    h1 span {
+      display: block;
+    }
+
+    .mobile-break {
+      display: inline;
+    }
+
+    .lead {
+      margin: 22px 0 0;
+      max-width: 620px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #344154;
+      line-height: 1.55;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta span {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.68);
+      padding: 7px 10px;
+      border-radius: 6px;
+    }
+
+    .hero-media {
+      margin: 0;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .hero-media img,
+    .photo img {
+      max-width: 1179px;
+      border-radius: 8px;
+      box-shadow: 0 18px 50px rgba(30, 24, 16, 0.16);
+      background: #ddd;
+    }
+
+    figcaption {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 760px) minmax(220px, 1fr);
+      gap: 52px;
+      align-items: start;
+    }
+
+    article {
+      font-size: 18px;
+    }
+
+    article p {
+      margin: 0 0 22px;
+      overflow-wrap: break-word;
+    }
+
+    .drop:first-letter {
+      float: left;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 74px;
+      line-height: 0.82;
+      padding: 9px 9px 0 0;
+      color: var(--accent);
+    }
+
+    blockquote {
+      margin: 32px 0;
+      padding: 20px 0 20px 24px;
+      border-left: 5px solid var(--gold);
+      color: #263346;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(22px, 3vw, 30px);
+      line-height: 1.28;
+    }
+
+    blockquote footer {
+      margin-top: 12px;
+      color: var(--muted);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .photo {
+      margin: 34px 0;
+    }
+
+    .side {
+      position: sticky;
+      top: 22px;
+      border-top: 3px solid var(--accent-2);
+      padding-top: 18px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .side h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      color: var(--ink);
+    }
+
+    .side dl {
+      margin: 0;
+    }
+
+    .side div {
+      display: grid;
+      gap: 2px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .side dt {
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .side dd {
+      margin: 0;
+      color: #2d3748;
+      font-weight: 650;
+      overflow-wrap: break-word;
+    }
+
+    .signature {
+      margin-top: 34px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        padding: 20px 14px 42px;
+      }
+
+      .hero,
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        gap: 24px;
+      }
+
+      .content {
+        gap: 30px;
+      }
+
+      .side {
+        position: static;
+        order: -1;
+      }
+
+      article {
+        font-size: 17px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      h1 {
+        font-size: clamp(42px, 13vw, 56px);
+      }
+
+      .mobile-break {
+        display: block;
+      }
+
+      .lead {
+        font-size: 17px;
+      }
+
+      .hero-media img,
+      .photo img {
+        border-radius: 6px;
+      }
+
+      blockquote {
+        padding-left: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="topbar" aria-label="Navigacija">
+      <div class="brand">Oratorij Grosuplje</div>
+      <a class="back" href="/">Vpis v delavnice</a>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Poročilo dneva</div>
+        <h1><span>Torek,</span><span>vodne <span class="mobile-break">igre</span></span></h1>
+        <p class="lead">Drugi dan oratorija je minil v znamenju delavnic, skupne molitve, kosila in vodnih iger, ki so pri Gasilskem domu Grosuplje poskrbele za pravo poletno osvežitev.</p>
+        <div class="meta" aria-label="Podatki o objavi">
+          <span>30. 6. 2026</span>
+          <span>Grosuplje</span>
+          <span>Avtorica: Katja Gorc</span>
+        </div>
+      </div>
+      <figure class="hero-media">
+        <img src="/assets/porocilo-torek/vodne-igre.jpg" width="1179" height="775" alt="Otroci in animatorji med vodnimi igrami pri Gasilskem domu Grosuplje" fetchpriority="high">
+        <figcaption>Vodne igre so poskrbele za najbolj mokro popoldne oratorija.</figcaption>
+      </figure>
+    </header>
+
+    <section class="content">
+      <article>
+        <p class="drop">Danes, 30. 6. 2026, smo imeli drugi dan oratorija v Grosuplju. Animatorji smo z oratorijem začeli že ob 7.00 zjutraj, saj smo se morali še marsikaj dogovoriti glede današnjih vodnih iger. Ob 8.00 so se začeli zbirati otroci, ki smo jih animatorji prijazno sprejeli.</p>
+
+        <p>Otroci, ki obiskujejo 1., 2., 3. in 4. razred, so se preizkusili v različnih disciplinah ter na koncu dobili identifikacijske kartice z imeni. Starejši otroci od 5. do 8. razreda so poligon preskočili, saj so se že zjutraj vpisovali v delavnice, ki so sledile po 10.00.</p>
+
+        <figure class="photo">
+          <img src="/assets/porocilo-torek/zbiranje-otrok.jpg" width="1179" height="780" alt="Otroci z rumenimi oratorijskimi majicami med jutranjim zbiranjem" loading="lazy" decoding="async">
+          <figcaption>Jutranje zbiranje, identifikacije in priprava na delavnice.</figcaption>
+        </figure>
+
+        <p>Po vpisovanju v delavnice in dobljenih identifikacijah smo otroke pospremili na zgornje igrišče, kjer smo se igrali igre z žogo, peli banse in zapeli oratorijsko himno. Zatem je napočil čas za hagio igro.</p>
+
+        <blockquote>
+          "Torkova hagio igra mi je bila zelo zanimiva, saj je govorila o prijateljstvu."
+          <footer>Anže</footer>
+        </blockquote>
+
+        <p>Ob 9.45 smo odšli v cerkev, kjer smo imeli skupno molitev in razpored po delavnicah. Kosilo, ki ga je priskrbel Hotel Grosuplje, je sledilo ob 12.00.</p>
+
+        <figure class="photo">
+          <img src="/assets/porocilo-torek/kosilo.jpg" width="1179" height="779" alt="Otroci prejemajo kosilo med oratorijskim dnevom" loading="lazy" decoding="async">
+          <figcaption>Kosilo je prišlo ravno pravi čas pred popoldanskim dogajanjem.</figcaption>
+        </figure>
+
+        <blockquote>
+          "Kosilo je bilo odlično, saj smo jedli pomfri in dunajski zrezek."
+          <footer>animator Klemen</footer>
+        </blockquote>
+
+        <p>Sledile so vodne igre, ki smo jih že vsi nestrpno čakali, saj je bilo zelo vroče. Do Gasilskega doma Grosuplje, kjer so potekale vodne igre, smo se odpravili peš. Otroci so se tam preizkusili v različnih disciplinah, kot so držanje ravnotežja na drseči podlagi, metanje vode v čeber in še marsikaj drugega.</p>
+
+        <p>Predvsem pa smo bili vsi zelo mokri. Torkov oratorij se je s tem tudi zaključil. Jutrišnjega dne se vsi veselimo, saj nas čaka izlet na Vogel.</p>
+
+        <p class="signature">Katja Gorc</p>
+      </article>
+
+      <aside class="side" aria-label="Povzetek dneva">
+        <h2>Povzetek</h2>
+        <dl>
+          <div>
+            <dt>Dan</dt>
+            <dd>Torek, drugi dan oratorija</dd>
+          </div>
+          <div>
+            <dt>Tema</dt>
+            <dd>Vodne igre in prijateljstvo</dd>
+          </div>
+          <div>
+            <dt>Program</dt>
+            <dd>Zbiranje, delavnice, molitev, kosilo, vodne igre</dd>
+          </div>
+          <div>
+            <dt>Naslednji dan</dt>
+            <dd>Izlet na Vogel</dd>
+          </div>
+        </dl>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
