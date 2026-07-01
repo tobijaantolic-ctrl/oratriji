@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="sl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sreda, izlet na Vogel - Oratorij Grosuplje</title>
+  <meta name="description" content="Poročilo sredinega oratorijskega izleta na Vogel: himna, avtobusi, gondola, sveta maša, velika igra in razgledi.">
+  <meta property="og:title" content="Sreda, izlet na Vogel">
+  <meta property="og:description" content="Oratorij Grosuplje se je v sredo odpravil na Vogel, kjer so otroci pri veliki igri pomagali Heidi in uživali v razgledih.">
+  <meta property="og:image" content="/assets/porocilo-sreda/gondola.jpg">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #162030;
+      --muted: #5e6f83;
+      --paper: #f5f7ee;
+      --line: #dce2d4;
+      --accent: #1f6f59;
+      --accent-2: #7252a3;
+      --gold: #d09a2d;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, #f9f5e9 0%, #edf6f2 48%, #eef2fa 100%);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(100%, 1240px);
+      margin: 0 auto;
+      padding: 28px 20px 56px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 28px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .brand {
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      justify-content: flex-end;
+    }
+
+    .links a {
+      text-decoration: none;
+      border-bottom: 1px solid currentColor;
+      line-height: 1.2;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+      gap: 34px;
+      align-items: end;
+      margin-bottom: 34px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(46px, 8vw, 92px);
+      line-height: 0.95;
+      letter-spacing: 0;
+      color: #151b25;
+    }
+
+    h1 span {
+      display: block;
+    }
+
+    .mobile-break {
+      display: inline;
+    }
+
+    .lead {
+      margin: 22px 0 0;
+      max-width: 620px;
+      font-size: clamp(18px, 2vw, 22px);
+      color: #324255;
+      line-height: 1.55;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta span {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      padding: 7px 10px;
+      border-radius: 6px;
+    }
+
+    figure {
+      margin: 0;
+    }
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .hero-media img,
+    .photo img,
+    .image-grid img {
+      border-radius: 8px;
+      box-shadow: 0 18px 50px rgba(22, 32, 48, 0.15);
+      background: #d9ded4;
+    }
+
+    .hero-media img,
+    .photo img {
+      max-width: 1034px;
+    }
+
+    figcaption {
+      margin-top: 9px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 760px) minmax(220px, 1fr);
+      gap: 52px;
+      align-items: start;
+    }
+
+    article {
+      font-size: 18px;
+    }
+
+    article p {
+      margin: 0 0 22px;
+      overflow-wrap: break-word;
+    }
+
+    .drop:first-letter {
+      float: left;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 74px;
+      line-height: 0.82;
+      padding: 9px 9px 0 0;
+      color: var(--accent);
+    }
+
+    .pull {
+      margin: 32px 0;
+      padding: 20px 0 20px 24px;
+      border-left: 5px solid var(--gold);
+      color: #263346;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(22px, 3vw, 30px);
+      line-height: 1.28;
+    }
+
+    .photo {
+      margin: 34px 0;
+    }
+
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin: 34px 0;
+      align-items: start;
+    }
+
+    .image-grid figure {
+      max-width: 704px;
+    }
+
+    .side {
+      position: sticky;
+      top: 22px;
+      border-top: 3px solid var(--accent);
+      padding-top: 18px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .side h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      color: var(--ink);
+    }
+
+    .side dl {
+      margin: 0;
+    }
+
+    .side div {
+      display: grid;
+      gap: 2px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .side dt {
+      color: var(--accent-2);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .side dd {
+      margin: 0;
+      color: #2d3748;
+      font-weight: 650;
+      overflow-wrap: break-word;
+    }
+
+    .signature {
+      margin-top: 34px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    @media (max-width: 900px) {
+      .page {
+        padding: 20px 14px 42px;
+      }
+
+      .hero,
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        gap: 24px;
+      }
+
+      .content {
+        gap: 30px;
+      }
+
+      .side {
+        position: static;
+        order: -1;
+      }
+
+      article {
+        font-size: 17px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .links {
+        justify-content: flex-start;
+      }
+
+      h1 {
+        font-size: clamp(42px, 13vw, 56px);
+      }
+
+      .mobile-break {
+        display: block;
+      }
+
+      .lead {
+        font-size: 17px;
+      }
+
+      .hero-media img,
+      .photo img,
+      .image-grid img {
+        border-radius: 6px;
+      }
+
+      .image-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pull {
+        padding-left: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="topbar" aria-label="Navigacija">
+      <div class="brand">Oratorij Grosuplje</div>
+      <div class="links">
+        <a href="/porocilo-torek.html">Torek</a>
+        <a href="/">Vpis v delavnice</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Poročilo dneva</div>
+        <h1><span>Sreda,</span><span>izlet <span class="mobile-break">na Vogel</span></span></h1>
+        <p class="lead">Sredin oratorijski dan nas je odpeljal visoko nad Bohinjsko jezero, kjer so se prepletli potovanje, sveta maša, velika igra in razgledi z Vogla.</p>
+        <div class="meta" aria-label="Podatki o objavi">
+          <span>1. 7. 2026</span>
+          <span>Vogel</span>
+          <span>Oratorijski izlet</span>
+        </div>
+      </div>
+      <figure class="hero-media">
+        <img src="/assets/porocilo-sreda/gondola.jpg" width="1034" height="690" alt="Otroci in animatorji v gondoli na poti na Vogel" fetchpriority="high">
+        <figcaption>Na Vogel smo se povzpeli z gondolo.</figcaption>
+      </figure>
+    </header>
+
+    <section class="content">
+      <article>
+        <p class="drop">Danes, v sredo, 1. 7. 2026, smo imeli oratorijski izlet. Letos smo se odpravili na Vogel. Po odpeti himni in dvigu zastave smo odšli do avtobusov, s katerimi smo se peljali do vznožja Vogla. Katehezo in hagio igro smo poslušali kar na avtobusih, na poti pa smo se še pogovarjali in zmolili rožni venec.</p>
+
+        <figure class="photo">
+          <img src="/assets/porocilo-sreda/pot-na-izlet.jpg" width="1031" height="687" alt="Otroci in animatorji hodijo v koloni proti avtobusom" loading="lazy" decoding="async">
+          <figcaption>Po jutranjem programu smo se v skupinah odpravili proti avtobusom.</figcaption>
+        </figure>
+
+        <p>Na vrhu, kamor smo se povzpeli z gondolo, smo kmalu po prihodu imeli sveto mašo. Sledila je velika igra: otroci so z zbiranjem točk na postajah pomagali Heidi, da bi čim hitreje prišla do svojega dedka.</p>
+
+        <p class="pull">Postaje, skupinsko zbiranje točk in alpski razgled so izletu dodali pravo pustolovsko vzdušje.</p>
+
+        <div class="image-grid">
+          <figure>
+            <img src="/assets/porocilo-sreda/velika-igra.jpg" width="669" height="446" alt="Skupine otrok med veliko igro na travnatem pobočju Vogla" loading="lazy" decoding="async">
+            <figcaption>Velika igra je potekala po postajah na Voglu.</figcaption>
+          </figure>
+          <figure>
+            <img src="/assets/porocilo-sreda/sedeznica.jpg" width="704" height="470" alt="Otroci na štirisedežnici med izletom na Vogel" loading="lazy" decoding="async">
+            <figcaption>S štirisedežnice se je odpiral pogled na okoliške hribe.</figcaption>
+          </figure>
+        </div>
+
+        <p>V tem času smo šli tudi na štirisedežnico, s katere smo videli čudovit razgled na okoliške hribe in gore. Ko se je velika igra končala, je prišel tudi čas za odhod. Z gondolo smo se odpravili nazaj v dolino, kjer smo se ponovno razdelili po avtobusih in krenili proti domu.</p>
+
+        <p class="signature">Oratorij Grosuplje</p>
+      </article>
+
+      <aside class="side" aria-label="Povzetek dneva">
+        <h2>Povzetek</h2>
+        <dl>
+          <div>
+            <dt>Dan</dt>
+            <dd>Sreda, oratorijski izlet</dd>
+          </div>
+          <div>
+            <dt>Cilj</dt>
+            <dd>Vogel</dd>
+          </div>
+          <div>
+            <dt>Program</dt>
+            <dd>Himna, avtobus, gondola, maša, velika igra, sedežnica</dd>
+          </div>
+          <div>
+            <dt>Velika igra</dt>
+            <dd>Pomoč Heidi na poti do dedka</dd>
+          </div>
+        </dl>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>
